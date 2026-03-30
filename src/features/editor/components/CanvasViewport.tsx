@@ -1,6 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH, type AnimationFrame } from '../../export/animationSchema'
+import { getResolvedCanvasGridColor, toRgbaString } from '../lib/canvasColors'
 import { getAngleDeg, getDistance, getReferenceHandleLayout, hitTestHandle, hitTestReferenceImage } from '../lib/referenceMath'
 import { hitTestPixelRegion, type SymmetryAxis } from '../lib/selection'
 import { useEditorStore } from '../state/editorStore'
@@ -290,6 +298,8 @@ export function CanvasViewportInner({ showHeader = true, compact = false }: Canv
   const onionSkinOpacity = useEditorStore((state) => state.onionSkinOpacity)
   const onionSkinPlacement = useEditorStore((state) => state.onionSkinPlacement)
   const zoom = useEditorStore((state) => state.zoom)
+  const canvasBackgroundColor = useEditorStore((state) => state.canvasBackgroundColor)
+  const canvasGridColorOverride = useEditorStore((state) => state.canvasGridColorOverride)
   const drawOnActiveFrame = useEditorStore((state) => state.drawOnActiveFrame)
   const beginPixelChange = useEditorStore((state) => state.beginPixelChange)
   const endPixelChange = useEditorStore((state) => state.endPixelChange)
@@ -307,12 +317,21 @@ export function CanvasViewportInner({ showHeader = true, compact = false }: Canv
   const referenceOnionSkinOpacity = useEditorStore((state) => state.referenceOnionSkinOpacity)
   const setReferenceTransform = useEditorStore((state) => state.setReferenceTransform)
 
-  const canvasStyle = useMemo(
-    () => ({
-      width: `${CANVAS_WIDTH * zoom}px`,
-      height: `${CANVAS_HEIGHT * zoom}px`,
-    }),
-    [zoom],
+  const canvasStyle = useMemo<CSSProperties>(
+    () => {
+      const gridColor = toRgbaString(
+        getResolvedCanvasGridColor(canvasBackgroundColor, canvasGridColorOverride),
+      )
+
+      return {
+        width: `${CANVAS_WIDTH * zoom}px`,
+        height: `${CANVAS_HEIGHT * zoom}px`,
+        backgroundColor: canvasBackgroundColor,
+        backgroundImage: `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`,
+        backgroundSize: `${zoom}px ${zoom}px`,
+      }
+    },
+    [canvasBackgroundColor, canvasGridColorOverride, zoom],
   )
 
   useEffect(() => {

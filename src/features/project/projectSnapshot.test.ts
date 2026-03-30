@@ -19,6 +19,8 @@ function createEditorState(): PersistedEditorState {
     animation,
     activeFrameIndex: 1,
     selectedColor: '#00ffaa',
+    canvasBackgroundColor: '#365314',
+    canvasGridColorOverride: '#f8fafc',
     brushSize: 2,
     zoom: 6,
     onionSkinEnabled: true,
@@ -81,6 +83,8 @@ describe('project snapshot', () => {
 
     expect(roundTripped.editorState.animation.name).toBe('email-transfer')
     expect(roundTripped.editorState.activeFrameIndex).toBe(1)
+    expect(roundTripped.editorState.canvasBackgroundColor).toBe('#365314')
+    expect(roundTripped.editorState.canvasGridColorOverride).toBe('#f8fafc')
     expect(roundTripped.editorState.referenceOnionSkinEnabled).toBe(true)
     expect(roundTripped.referenceAssets[0].name).toBe('pose.png')
   })

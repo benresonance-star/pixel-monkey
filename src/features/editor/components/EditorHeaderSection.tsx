@@ -1,4 +1,5 @@
 import { useEditorStore } from '../state/editorStore'
+import { getResolvedCanvasGridColor } from '../lib/canvasColors'
 
 type EditorHeaderSectionProps = {
   onCreateNewProjectClick: () => void
@@ -18,10 +19,23 @@ export function EditorHeaderSection({
   statusMessage,
 }: EditorHeaderSectionProps) {
   const animationName = useEditorStore((state) => state.animation.name)
+  const canvasBackgroundColor = useEditorStore((state) => state.canvasBackgroundColor)
+  const canvasGridColorOverride = useEditorStore((state) => state.canvasGridColorOverride)
   const setAnimationName = useEditorStore((state) => state.setAnimationName)
+  const setCanvasBackgroundColor = useEditorStore((state) => state.setCanvasBackgroundColor)
+  const setCanvasGridColorOverride = useEditorStore((state) => state.setCanvasGridColorOverride)
+
+  const resolvedGridColor = getResolvedCanvasGridColor(
+    canvasBackgroundColor,
+    canvasGridColorOverride,
+  )
 
   return (
     <section className="editor-section panel">
+      <div className="app-wordmark" aria-label="Pixel Monkey">
+        PIXEL MONKEY
+      </div>
+
       <div className="editor-section__header">
         <div className="editor-section__copy">
           <h2>Animation</h2>
@@ -45,6 +59,33 @@ export function EditorHeaderSection({
           </summary>
 
           <div className="settings-menu__content">
+            <div className="settings-menu__group">
+              <label className="field field--small">
+                <span>Canvas background</span>
+                <input
+                  type="color"
+                  value={canvasBackgroundColor}
+                  onChange={(event) => setCanvasBackgroundColor(event.target.value)}
+                />
+              </label>
+              <label className="field field--small">
+                <span>Grid color</span>
+                <div className="settings-menu__color-row">
+                  <input
+                    type="color"
+                    value={resolvedGridColor}
+                    onChange={(event) => setCanvasGridColorOverride(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCanvasGridColorOverride(null)}
+                    disabled={canvasGridColorOverride === null}
+                  >
+                    Auto
+                  </button>
+                </div>
+              </label>
+            </div>
             <button type="button" onClick={onCreateNewProjectClick}>
               Create new project
             </button>

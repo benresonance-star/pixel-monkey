@@ -46,6 +46,8 @@ function createPersistedState(): PersistedEditorState {
     animation,
     activeFrameIndex: 1,
     selectedColor: '#ff8800',
+    canvasBackgroundColor: '#1d4ed8',
+    canvasGridColorOverride: '#f8fafc',
     brushSize: 4,
     zoom: 7,
     onionSkinEnabled: true,
@@ -95,6 +97,8 @@ describe('editor persistence', () => {
     expect(restoredState.animation.name).toBe('restored-draft')
     expect(restoredState.activeFrameIndex).toBe(1)
     expect(restoredState.selectedColor).toBe('#ff8800ff')
+    expect(restoredState.canvasBackgroundColor).toBe('#1d4ed8')
+    expect(restoredState.canvasGridColorOverride).toBe('#f8fafc')
     expect(restoredState.brushSize).toBe(4)
     expect(restoredState.zoom).toBe(7)
     expect(restoredState.onionSkinEnabled).toBe(true)
@@ -132,5 +136,19 @@ describe('editor persistence', () => {
     expect(rawValue).not.toBeNull()
     expect(rawValue).not.toContain('isPlaying')
     expect(getInitialEditorState().isPlaying).toBe(false)
+  })
+
+  it('falls back to the legacy app background field when loading older drafts', () => {
+    const legacyState = {
+      ...createPersistedState(),
+      canvasBackgroundColor: undefined,
+      appBackgroundColor: '#365314',
+    }
+
+    globalThis.localStorage.setItem(EDITOR_PERSISTENCE_KEY, JSON.stringify(legacyState))
+
+    const restoredState = getInitialEditorState()
+
+    expect(restoredState.canvasBackgroundColor).toBe('#365314')
   })
 })

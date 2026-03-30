@@ -17,6 +17,7 @@ import {
 } from '../lib/selection'
 import { createReferenceAssetFromFile, deleteReferenceAsset, loadReferenceAssets, saveReferenceAsset } from './referenceAssetStore'
 import {
+  DEFAULT_CANVAS_BACKGROUND_COLOR,
   loadPersistedEditorState,
   normalizePersistedEditorState,
   savePersistedEditorState,
@@ -63,6 +64,8 @@ export type EditorState = {
   activeFrameIndex: number
   selectedTool: EditorTool | 'select'
   selectedColor: string
+  canvasBackgroundColor: string
+  canvasGridColorOverride: string | null
   brushSize: BrushSize
   zoom: number
   isPlaying: boolean
@@ -91,6 +94,8 @@ type EditorActions = {
   setAnimationName: (name: string) => void
   setSelectedTool: (tool: EditorTool | 'select') => void
   setSelectedColor: (color: string) => void
+  setCanvasBackgroundColor: (color: string) => void
+  setCanvasGridColorOverride: (color: string | null) => void
   setBrushSize: (size: BrushSize) => void
   setZoom: (zoom: number) => void
   setFps: (fps: number) => void
@@ -282,6 +287,8 @@ export function createPersistedEditorStateSnapshot(
     | 'animation'
     | 'activeFrameIndex'
     | 'selectedColor'
+    | 'canvasBackgroundColor'
+    | 'canvasGridColorOverride'
     | 'brushSize'
     | 'zoom'
     | 'onionSkinEnabled'
@@ -296,6 +303,8 @@ export function createPersistedEditorStateSnapshot(
     animation: state.animation,
     activeFrameIndex: state.activeFrameIndex,
     selectedColor: state.selectedColor,
+    canvasBackgroundColor: state.canvasBackgroundColor,
+    canvasGridColorOverride: state.canvasGridColorOverride,
     brushSize: state.brushSize,
     zoom: state.zoom,
     onionSkinEnabled: state.onionSkinEnabled,
@@ -335,6 +344,8 @@ export function getInitialEditorState(): EditorState {
     activeFrameIndex: 0,
     selectedTool: 'pencil',
     selectedColor: DEFAULT_COLOR,
+    canvasBackgroundColor: DEFAULT_CANVAS_BACKGROUND_COLOR,
+    canvasGridColorOverride: null,
     brushSize: BRUSH_SIZES[0],
     zoom: DEFAULT_ZOOM,
     isPlaying: false,
@@ -373,6 +384,8 @@ export function getInitialEditorState(): EditorState {
       animation: nextAnimation,
       activeFrameIndex: clampFrameIndex(persistedState.activeFrameIndex, nextAnimation.frames.length),
       selectedColor: normalizeColorHex(persistedState.selectedColor),
+      canvasBackgroundColor: persistedState.canvasBackgroundColor,
+      canvasGridColorOverride: persistedState.canvasGridColorOverride,
       brushSize: persistedState.brushSize,
       zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(persistedState.zoom))),
       onionSkinEnabled: persistedState.onionSkinEnabled,
@@ -405,6 +418,17 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
   setSelectedColor: (color) => {
     set({ selectedColor: normalizeColorHex(color), selectedTool: 'pencil', referenceEditMode: false })
+  },
+
+  setCanvasBackgroundColor: (color) => {
+    const nextColor = normalizeColorHex(color).slice(0, 7)
+    set({ canvasBackgroundColor: nextColor })
+  },
+
+  setCanvasGridColorOverride: (color) => {
+    set({
+      canvasGridColorOverride: color ? normalizeColorHex(color).slice(0, 7) : null,
+    })
   },
 
   setBrushSize: (size) => {
@@ -1081,6 +1105,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       ),
       selectedTool: 'pencil',
       selectedColor: normalizeColorHex(normalizedEditorState.selectedColor),
+      canvasBackgroundColor: normalizedEditorState.canvasBackgroundColor,
+      canvasGridColorOverride: normalizedEditorState.canvasGridColorOverride,
       brushSize: normalizedEditorState.brushSize,
       zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(normalizedEditorState.zoom))),
       isPlaying: false,
@@ -1117,6 +1143,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       activeFrameIndex: 0,
       selectedTool: 'pencil',
       selectedColor: DEFAULT_COLOR,
+      canvasBackgroundColor: DEFAULT_CANVAS_BACKGROUND_COLOR,
+      canvasGridColorOverride: null,
       brushSize: BRUSH_SIZES[0],
       zoom: DEFAULT_ZOOM,
       isPlaying: false,
@@ -1356,6 +1384,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       activeFrameIndex: 0,
       selectedTool: 'pencil',
       selectedColor: DEFAULT_COLOR,
+      canvasBackgroundColor: DEFAULT_CANVAS_BACKGROUND_COLOR,
+      canvasGridColorOverride: null,
       brushSize: BRUSH_SIZES[0],
       zoom: DEFAULT_ZOOM,
       isPlaying: false,
@@ -1389,6 +1419,8 @@ useEditorStore.subscribe((state) => {
     animation: state.animation,
     activeFrameIndex: state.activeFrameIndex,
     selectedColor: state.selectedColor,
+    canvasBackgroundColor: state.canvasBackgroundColor,
+    canvasGridColorOverride: state.canvasGridColorOverride,
     brushSize: state.brushSize,
     zoom: state.zoom,
     onionSkinEnabled: state.onionSkinEnabled,

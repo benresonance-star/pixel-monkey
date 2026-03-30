@@ -25,6 +25,8 @@ export function PixelEditorPage() {
   const zoom = useEditorStore((state) => state.zoom)
   const isPlaying = useEditorStore((state) => state.isPlaying)
   const selectedColor = useEditorStore((state) => state.selectedColor)
+  const canvasBackgroundColor = useEditorStore((state) => state.canvasBackgroundColor)
+  const canvasGridColorOverride = useEditorStore((state) => state.canvasGridColorOverride)
   const brushSize = useEditorStore((state) => state.brushSize)
   const onionSkinEnabled = useEditorStore((state) => state.onionSkinEnabled)
   const onionSkinOpacity = useEditorStore((state) => state.onionSkinOpacity)
@@ -118,6 +120,8 @@ export function PixelEditorPage() {
         animation,
         activeFrameIndex,
         selectedColor,
+        canvasBackgroundColor,
+        canvasGridColorOverride,
         brushSize,
         zoom,
         onionSkinEnabled,

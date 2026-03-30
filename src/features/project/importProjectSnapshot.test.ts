@@ -18,6 +18,8 @@ function createSnapshot(): ProjectSnapshot {
       animation,
       activeFrameIndex: 0,
       selectedColor: '#22c55eff',
+      canvasBackgroundColor: '#0f172a',
+      canvasGridColorOverride: '#f8fafc',
       brushSize: 1,
       zoom: 4,
       onionSkinEnabled: false,
@@ -56,6 +58,25 @@ describe('import project snapshot', () => {
 
     expect(importedSnapshot.editorState.animation.name).toBe('carry-over-project')
     expect(importedSnapshot.referenceAssets[0].name).toBe('trace.png')
+  })
+
+  it('maps legacy app background snapshots to the canvas background field', async () => {
+    const snapshot = createSnapshot()
+    const legacySnapshot = {
+      ...snapshot,
+      editorState: {
+        ...snapshot.editorState,
+        canvasBackgroundColor: undefined,
+        appBackgroundColor: '#312e81',
+      },
+    }
+    const file = new File([JSON.stringify(legacySnapshot)], 'legacy.pixel-project.json', {
+      type: 'application/json',
+    })
+
+    const importedSnapshot = await importProjectSnapshotFile(file)
+
+    expect(importedSnapshot.editorState.canvasBackgroundColor).toBe('#312e81')
   })
 })
 

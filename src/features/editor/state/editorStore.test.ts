@@ -43,6 +43,24 @@ describe('editor store', () => {
     expect(nextState.onionSkinOpacity).toBe(0.1)
   })
 
+  it('updates the canvas background color as a saved hex value', () => {
+    const state = useEditorStore.getState()
+
+    state.setCanvasBackgroundColor('#1D4ED8AA')
+
+    expect(useEditorStore.getState().canvasBackgroundColor).toBe('#1d4ed8')
+  })
+
+  it('stores and clears the manual canvas grid color override', () => {
+    const state = useEditorStore.getState()
+
+    state.setCanvasGridColorOverride('#F8FAFCAA')
+    expect(useEditorStore.getState().canvasGridColorOverride).toBe('#f8fafc')
+
+    state.setCanvasGridColorOverride(null)
+    expect(useEditorStore.getState().canvasGridColorOverride).toBeNull()
+  })
+
   it('copies the active frame reference layer when duplicating a frame', () => {
     const frameId = useEditorStore.getState().animation.frames[0].id
 
@@ -155,6 +173,8 @@ describe('editor store', () => {
       activeFrameIndex: 0,
       selectedTool: 'eraser',
       selectedColor: '#ff00ffff',
+      canvasBackgroundColor: '#7f1d1d',
+      canvasGridColorOverride: '#f8fafc',
       brushSize: 4,
       zoom: 9,
       isPlaying: true,
@@ -207,6 +227,8 @@ describe('editor store', () => {
     expect(nextState.animation.frames).toHaveLength(1)
     expect(nextState.selectedTool).toBe('pencil')
     expect(nextState.selectedColor).toBe('#22c55eff')
+    expect(nextState.canvasBackgroundColor).toBe('#0f172a')
+    expect(nextState.canvasGridColorOverride).toBeNull()
     expect(nextState.brushSize).toBe(1)
     expect(nextState.zoom).toBe(4)
     expect(nextState.isPlaying).toBe(false)

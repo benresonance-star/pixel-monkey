@@ -11,6 +11,7 @@ import {
 } from './referenceLayer'
 
 export const EDITOR_PERSISTENCE_KEY = 'pixel-editor.current-draft.v1'
+export const DEFAULT_CANVAS_BACKGROUND_COLOR = '#0f172a'
 
 export type OnionSkinPlacement = 'below' | 'above'
 
@@ -18,6 +19,8 @@ export type PersistedEditorState = {
   animation: AnimationDocument
   activeFrameIndex: number
   selectedColor: string
+  canvasBackgroundColor: string
+  canvasGridColorOverride: string | null
   brushSize: BrushSize
   zoom: number
   onionSkinEnabled: boolean
@@ -28,25 +31,56 @@ export type PersistedEditorState = {
   referenceOnionSkinOpacity: number
 }
 
-export const persistedEditorStateSchema = z.object({
-  animation: animationDocumentSchema,
-  activeFrameIndex: z.int().min(0),
-  selectedColor: z.string().regex(/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/),
-  brushSize: z.number().refine((value): value is BrushSize => BRUSH_SIZES.includes(value as BrushSize)),
-  zoom: z.int().min(1).max(64),
-  onionSkinEnabled: z.boolean(),
-  onionSkinOpacity: z.number().min(0).max(1),
-  onionSkinPlacement: z.enum(['below', 'above']),
-  referenceLayers: referenceLayerMapSchema.default({}),
-  referenceOnionSkinEnabled: z.boolean().default(false),
-  referenceOnionSkinOpacity: z.number().min(0).max(1).default(DEFAULT_REFERENCE_ONION_OPACITY),
-})
+const backgroundColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/)
+
+export const persistedEditorStateSchema = z
+  .object({
+    animation: animationDocumentSchema,
+    activeFrameIndex: z.int().min(0),
+    selectedColor: z.string().regex(/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/),
+    canvasBackgroundColor: backgroundColorSchema.optional(),
+    canvasGridColorOverride: backgroundColorSchema.nullable().optional(),
+    // Backward compatibility for drafts and snapshots saved before the rename.
+    appBackgroundColor: backgroundColorSchema.optional(),
+    brushSize: z.number().refine((value): value is BrushSize => BRUSH_SIZES.includes(value as BrushSize)),
+    zoom: z.int().min(1).max(64),
+    onionSkinEnabled: z.boolean(),
+    onionSkinOpacity: z.number().min(0).max(1),
+    onionSkinPlacement: z.enum(['below', 'above']),
+    referenceLayers: referenceLayerMapSchema.default({}),
+    referenceOnionSkinEnabled: z.boolean().default(false),
+    referenceOnionSkinOpacity: z.number().min(0).max(1).default(DEFAULT_REFERENCE_ONION_OPACITY),
+  })
+  .transform(
+    ({
+      appBackgroundColor,
+      canvasBackgroundColor,
+      canvasGridColorOverride,
+      ...state
+    }): PersistedEditorState => ({
+      ...state,
+      canvasBackgroundColor:
+        canvasBackgroundColor ?? appBackgroundColor ?? DEFAULT_CANVAS_BACKGROUND_COLOR,
+      canvasGridColorOverride: canvasGridColorOverride ?? null,
+    }),
+  )
 
 export function normalizePersistedEditorState(
   state: PersistedEditorState,
 ): PersistedEditorState {
+  const canvasBackgroundColor =
+    typeof state.canvasBackgroundColor === 'string' && state.canvasBackgroundColor.trim().length > 0
+      ? state.canvasBackgroundColor.trim().toLowerCase()
+      : DEFAULT_CANVAS_BACKGROUND_COLOR
+  const canvasGridColorOverride =
+    typeof state.canvasGridColorOverride === 'string' && state.canvasGridColorOverride.trim().length > 0
+      ? state.canvasGridColorOverride.trim().toLowerCase()
+      : null
+
   return {
     ...state,
+    canvasBackgroundColor,
+    canvasGridColorOverride,
     referenceLayers: Object.fromEntries(
       Object.entries(state.referenceLayers).map(([frameId, layer]) => [
         frameId,
