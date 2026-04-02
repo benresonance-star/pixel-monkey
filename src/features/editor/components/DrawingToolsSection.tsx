@@ -240,15 +240,13 @@ export function DrawingToolsSection() {
       </CollapsibleSubsection>
 
       <CollapsibleSubsection
-        title="Selection"
+        title="Selection Tool Options"
         headerExtra={
-          <span className="onion-skin-panel__note">
-            {hasFloatingSelection
-              ? 'Floating selection'
-              : hasPaintSelection
-                ? `${selectedPixelIndices.length} pixels selected`
-                : 'Use Select tool'}
-          </span>
+          hasFloatingSelection || hasPaintSelection ? (
+            <span className="onion-skin-panel__note">
+              {hasFloatingSelection ? 'Floating selection' : `${selectedPixelIndices.length} pixels selected`}
+            </span>
+          ) : null
         }
         isExpanded={isSelectionOpen}
         onToggle={() => setIsSelectionOpen((current) => !current)}
@@ -386,13 +384,6 @@ export function DrawingToolsSection() {
 
       <CollapsibleSubsection
         title="Reference layer"
-        headerExtra={
-          activeReferenceAsset ? (
-            <span className="onion-skin-panel__note">{activeReferenceAsset.name}</span>
-          ) : (
-            <span className="onion-skin-panel__note">No image loaded</span>
-          )
-        }
         isExpanded={isReferenceOpen}
         onToggle={() => setIsReferenceOpen((current) => !current)}
       >
@@ -403,6 +394,55 @@ export function DrawingToolsSection() {
           accept="image/png,image/jpeg,image/webp,image/gif"
           onChange={handleReferenceFileChange}
         />
+
+        <div className="editor-tools__reference-primary">
+          <p className="editor-tools__reference-status onion-skin-panel__note" role="status">
+            {activeReferenceAsset ? activeReferenceAsset.name : 'No image loaded'}
+          </p>
+
+          <div className="editor-tools__row">
+            <label className="toggle-field">
+              <input
+                type="checkbox"
+                checked={activeReferenceLayer.visible}
+                onChange={(event) => setReferenceVisibility(event.target.checked)}
+                disabled={!hasReferenceImage}
+              />
+              <span>Show reference</span>
+            </label>
+
+            <label className="field field--compact">
+              <span>Reference opacity</span>
+              <input
+                type="range"
+                min={5}
+                max={100}
+                value={Math.round(activeReferenceLayer.opacity * 100)}
+                onChange={(event) => setReferenceOpacity(Number(event.target.value) / 100)}
+                disabled={!hasReferenceImage}
+              />
+            </label>
+          </div>
+
+          <div className="button-group" role="group" aria-label="Reference layer placement">
+            <button
+              type="button"
+              className={activeReferenceLayer.layerPlacement === 'below' ? 'is-active' : ''}
+              onClick={() => setReferenceLayerPlacement('below')}
+              disabled={!hasReferenceImage}
+            >
+              Below pixels
+            </button>
+            <button
+              type="button"
+              className={activeReferenceLayer.layerPlacement === 'above' ? 'is-active' : ''}
+              onClick={() => setReferenceLayerPlacement('above')}
+              disabled={!hasReferenceImage}
+            >
+              Above pixels
+            </button>
+          </div>
+        </div>
 
         <div className="button-group" role="group" aria-label="Reference image actions">
           <button type="button" onClick={() => fileInputRef.current?.click()}>
@@ -421,49 +461,6 @@ export function DrawingToolsSection() {
             disabled={!hasReferenceImage}
           >
             Reference edit mode
-          </button>
-        </div>
-
-        <div className="editor-tools__row">
-          <label className="toggle-field">
-            <input
-              type="checkbox"
-              checked={activeReferenceLayer.visible}
-              onChange={(event) => setReferenceVisibility(event.target.checked)}
-              disabled={!hasReferenceImage}
-            />
-            <span>Show reference</span>
-          </label>
-
-          <label className="field field--compact">
-            <span>Reference opacity</span>
-            <input
-              type="range"
-              min={5}
-              max={100}
-              value={Math.round(activeReferenceLayer.opacity * 100)}
-              onChange={(event) => setReferenceOpacity(Number(event.target.value) / 100)}
-              disabled={!hasReferenceImage}
-            />
-          </label>
-        </div>
-
-        <div className="button-group" role="group" aria-label="Reference layer placement">
-          <button
-            type="button"
-            className={activeReferenceLayer.layerPlacement === 'below' ? 'is-active' : ''}
-            onClick={() => setReferenceLayerPlacement('below')}
-            disabled={!hasReferenceImage}
-          >
-            Below pixels
-          </button>
-          <button
-            type="button"
-            className={activeReferenceLayer.layerPlacement === 'above' ? 'is-active' : ''}
-            onClick={() => setReferenceLayerPlacement('above')}
-            disabled={!hasReferenceImage}
-          >
-            Above pixels
           </button>
         </div>
 

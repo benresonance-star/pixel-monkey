@@ -16,7 +16,7 @@ export function CollapsibleSection({
   children,
 }: CollapsibleSectionProps) {
   return (
-    <section className="editor-section panel">
+    <section className="editor-section panel editor-section--collapsible">
       <button
         type="button"
         className="editor-section__header editor-section__header--button"
