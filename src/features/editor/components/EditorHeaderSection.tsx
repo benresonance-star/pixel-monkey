@@ -31,12 +31,13 @@ export function EditorHeaderSection({
   )
 
   return (
-    <section className="editor-section panel">
-      <div className="app-wordmark" aria-label="Pixel Monkey">
-        PIXEL MONKEY
-      </div>
+    <section className="editor-section editor-header">
+      <div className="editor-header__title-row">
+        <div className="app-wordmark" aria-label="Pixel Monkey">
+          <span className="app-wordmark__pixel">PIXEL</span>
+          <span className="app-wordmark__monkey">MONKEY</span>
+        </div>
 
-      <div className="editor-section__header editor-section__header--align-end">
         <details className="settings-menu">
           <summary className="settings-menu__trigger" aria-label="Open settings menu">
             <svg
@@ -101,7 +102,7 @@ export function EditorHeaderSection({
         </details>
       </div>
 
-      <div className="editor-section__body">
+      <div className="editor-header__name">
         <label className="field">
           <span>Animation name</span>
           <input value={animationName} onChange={(event) => setAnimationName(event.target.value)} />

@@ -148,6 +148,10 @@ export function DrawingToolsSection() {
   const mirrorFloatingSelection = useEditorStore((state) => state.mirrorFloatingSelection)
   const setSymmetryEnabled = useEditorStore((state) => state.setSymmetryEnabled)
   const setSymmetryAxis = useEditorStore((state) => state.setSymmetryAxis)
+  const canUndo = useEditorStore((state) => state.pixelHistoryPast.length > 0)
+  const canRedo = useEditorStore((state) => state.pixelHistoryFuture.length > 0)
+  const undoPixelChange = useEditorStore((state) => state.undoPixelChange)
+  const redoPixelChange = useEditorStore((state) => state.redoPixelChange)
 
   async function handleReferenceFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -193,7 +197,7 @@ export function DrawingToolsSection() {
         </div>
       </div>
 
-      <div className="editor-tools__row">
+      <div className="editor-tools__row editor-tools__row--color-toolbar">
         <label className="tool-color-swatch">
           <span className="sr-only">Color</span>
           <input
@@ -205,6 +209,14 @@ export function DrawingToolsSection() {
             title="Color"
           />
         </label>
+        <div className="button-group editor-tools__undo-redo" role="group" aria-label="Undo and redo">
+          <button type="button" className="tool-undo-redo-button" disabled={!canUndo} onClick={undoPixelChange}>
+            Undo
+          </button>
+          <button type="button" className="tool-undo-redo-button" disabled={!canRedo} onClick={redoPixelChange}>
+            Redo
+          </button>
+        </div>
       </div>
 
       <CollapsibleSubsection
