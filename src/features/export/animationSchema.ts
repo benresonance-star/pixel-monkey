@@ -7,6 +7,7 @@ export const MIN_FPS = 1
 export const MAX_FPS = 24
 export const DEFAULT_FPS = 8
 export const MAX_FRAMES = 24
+export const MAX_FRAME_DESCRIPTOR_LENGTH = 80
 export const EMPTY_PIXEL = '#00000000'
 export const DEFAULT_COLOR = '#22c55eff'
 export const DEFAULT_ANIMATION_NAME = 'untitled-animation'
@@ -17,6 +18,7 @@ const rgbaHexPattern = /^#[0-9a-fA-F]{8}$/
 export const animationFrameSchema = z.object({
   id: z.string().min(1),
   pixels: z.array(z.string().regex(rgbaHexPattern)).length(TOTAL_PIXELS),
+  descriptor: z.string().max(MAX_FRAME_DESCRIPTOR_LENGTH).default(''),
 })
 
 export const animationDocumentSchema = z.object({
@@ -59,20 +61,31 @@ export function sanitizeAnimationName(name: string): string {
   return trimmed.length > 0 ? trimmed : DEFAULT_ANIMATION_NAME
 }
 
+export function sanitizeFrameDescriptor(raw: string): string {
+  return raw.trim().slice(0, MAX_FRAME_DESCRIPTOR_LENGTH)
+}
+
 export function createBlankPixels(): string[] {
   return Array.from({ length: TOTAL_PIXELS }, () => EMPTY_PIXEL)
 }
 
-export function createFrame(sourcePixels?: readonly string[]): AnimationFrame {
+export function createFrame(
+  sourcePixels?: readonly string[],
+  options?: { descriptor?: string },
+): AnimationFrame {
   const pixels = sourcePixels ? [...sourcePixels] : createBlankPixels()
 
   if (pixels.length !== TOTAL_PIXELS) {
     throw new Error(`Frame pixel count must be ${TOTAL_PIXELS}.`)
   }
 
+  const descriptor =
+    options?.descriptor !== undefined ? sanitizeFrameDescriptor(options.descriptor) : ''
+
   return {
     id: crypto.randomUUID(),
     pixels: pixels.map((pixel) => normalizeColorHex(pixel)),
+    descriptor,
   }
 }
 
@@ -94,6 +107,7 @@ export function normalizeAnimationDocument(document: AnimationDocument): Animati
     fps: clampFps(document.fps),
     frames: document.frames.map((frame) => ({
       ...frame,
+      descriptor: sanitizeFrameDescriptor(frame.descriptor ?? ''),
       pixels: frame.pixels.map((pixel) => normalizeColorHex(pixel)),
     })),
   }

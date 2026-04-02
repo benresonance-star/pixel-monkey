@@ -279,9 +279,16 @@ export function CanvasViewport() {
 type CanvasViewportInnerProps = {
   showHeader?: boolean
   compact?: boolean
+  /** When omitted, zoom slider is shown only if the canvas header is hidden. */
+  showZoomControl?: boolean
 }
 
-export function CanvasViewportInner({ showHeader = true, compact = false }: CanvasViewportInnerProps) {
+export function CanvasViewportInner({
+  showHeader = true,
+  compact = false,
+  showZoomControl,
+}: CanvasViewportInnerProps) {
+  const shouldShowZoomControl = showZoomControl ?? !showHeader
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const pointerStateRef = useRef<PixelPoint | null>(null)
   const referenceInteractionRef = useRef<ReferenceInteraction | null>(null)
@@ -298,6 +305,7 @@ export function CanvasViewportInner({ showHeader = true, compact = false }: Canv
   const onionSkinOpacity = useEditorStore((state) => state.onionSkinOpacity)
   const onionSkinPlacement = useEditorStore((state) => state.onionSkinPlacement)
   const zoom = useEditorStore((state) => state.zoom)
+  const setZoom = useEditorStore((state) => state.setZoom)
   const canvasBackgroundColor = useEditorStore((state) => state.canvasBackgroundColor)
   const canvasGridColorOverride = useEditorStore((state) => state.canvasGridColorOverride)
   const drawOnActiveFrame = useEditorStore((state) => state.drawOnActiveFrame)
@@ -703,6 +711,21 @@ export function CanvasViewportInner({ showHeader = true, compact = false }: Canv
           onPointerCancel={handlePointerEnd}
         />
       </div>
+
+      {shouldShowZoomControl ? (
+        <div className="canvas-panel__zoom">
+          <label className="field field--small">
+            <span>Canvas zoom</span>
+            <input
+              type="range"
+              min={2}
+              max={12}
+              value={zoom}
+              onChange={(event) => setZoom(Number(event.target.value))}
+            />
+          </label>
+        </div>
+      ) : null}
     </section>
   )
 }

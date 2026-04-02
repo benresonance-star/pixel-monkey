@@ -10,6 +10,22 @@ describe('editor store', () => {
     useEditorStore.setState(getInitialEditorState())
   })
 
+  it('reorders frames and updates the active index to follow the same frame', () => {
+    const store = useEditorStore.getState()
+    store.addBlankFrame()
+
+    const frameA = useEditorStore.getState().animation.frames[0]
+    const frameB = useEditorStore.getState().animation.frames[1]
+    useEditorStore.getState().selectFrame(0)
+
+    useEditorStore.getState().reorderFrames(0, 1)
+
+    const next = useEditorStore.getState()
+    expect(next.animation.frames[0].id).toBe(frameB.id)
+    expect(next.animation.frames[1].id).toBe(frameA.id)
+    expect(next.activeFrameIndex).toBe(1)
+  })
+
   it('duplicates the active frame into a new frame with a different id', () => {
     const beforeDuplicate = useEditorStore.getState()
     const originalFrame = beforeDuplicate.animation.frames[0]

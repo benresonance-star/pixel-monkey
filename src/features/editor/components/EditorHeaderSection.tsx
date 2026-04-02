@@ -36,7 +36,7 @@ export function EditorHeaderSection({
         PIXEL MONKEY
       </div>
 
-      <div className="editor-section__header">
+      <div className="editor-section__header editor-section__header--align-end">
         <details className="settings-menu">
           <summary className="settings-menu__trigger" aria-label="Open settings menu">
             <svg

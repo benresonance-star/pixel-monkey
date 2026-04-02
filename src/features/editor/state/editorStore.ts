@@ -1,7 +1,22 @@
 import { create } from 'zustand'
 
-import { EMPTY_PIXEL, MAX_FRAMES, clampFps, createDefaultAnimation, createFrame, normalizeAnimationDocument, normalizeColorHex, sanitizeAnimationName, type AnimationDocument, type BrushSize } from '../../export/animationSchema'
-import { CANVAS_HEIGHT, CANVAS_WIDTH, BRUSH_SIZES, DEFAULT_COLOR } from '../../export/animationSchema'
+import {
+  BRUSH_SIZES,
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  DEFAULT_COLOR,
+  EMPTY_PIXEL,
+  MAX_FRAME_DESCRIPTOR_LENGTH,
+  MAX_FRAMES,
+  clampFps,
+  createDefaultAnimation,
+  createFrame,
+  normalizeAnimationDocument,
+  normalizeColorHex,
+  sanitizeAnimationName,
+  type AnimationDocument,
+  type BrushSize,
+} from '../../export/animationSchema'
 import { drawStroke, type PixelPoint } from '../lib/drawing'
 import { getNextFrameIndex, getPreviousFrameIndex } from '../lib/playback'
 import {
@@ -141,6 +156,8 @@ type EditorActions = {
   ) => Promise<void>
   createNewProject: () => void
   selectFrame: (index: number) => void
+  setFrameDescriptor: (frameIndex: number, descriptor: string) => void
+  reorderFrames: (fromIndex: number, toIndex: number) => void
   addBlankFrame: () => void
   duplicateActiveFrame: () => void
   deleteActiveFrame: () => void
@@ -173,6 +190,23 @@ function clampOnionSkinOpacity(opacity: number) {
 
 function clampFrameIndex(index: number, frameCount: number) {
   return Math.max(0, Math.min(index, Math.max(0, frameCount - 1)))
+}
+
+function reorderFrameList<T>(items: readonly T[], fromIndex: number, toIndex: number): T[] {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= items.length ||
+    toIndex >= items.length
+  ) {
+    return [...items]
+  }
+
+  const next = [...items]
+  const [moved] = next.splice(fromIndex, 1)
+  next.splice(toIndex, 0, moved)
+  return next
 }
 
 function synchronizeReferenceLayers(
@@ -1181,6 +1215,67 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     }))
   },
 
+  setFrameDescriptor: (frameIndex, descriptor) => {
+    set((state) => {
+      const frames = state.animation.frames
+      if (frameIndex < 0 || frameIndex >= frames.length) {
+        return state
+      }
+
+      const nextDescriptor = descriptor.slice(0, MAX_FRAME_DESCRIPTOR_LENGTH)
+      const current = frames[frameIndex]?.descriptor ?? ''
+      if (nextDescriptor === current) {
+        return state
+      }
+
+      const nextFrames = frames.map((frame, index) =>
+        index === frameIndex ? { ...frame, descriptor: nextDescriptor } : frame,
+      )
+
+      return {
+        animation: {
+          ...state.animation,
+          frames: nextFrames,
+        },
+      }
+    })
+  },
+
+  reorderFrames: (fromIndex, toIndex) => {
+    set((state) => {
+      const frames = state.animation.frames
+      if (
+        fromIndex === toIndex ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= frames.length ||
+        toIndex >= frames.length
+      ) {
+        return state
+      }
+
+      const nextFrames = reorderFrameList(frames, fromIndex, toIndex)
+
+      const activeId = frames[state.activeFrameIndex]?.id
+      const newActiveIndex =
+        activeId !== undefined ? nextFrames.findIndex((frame) => frame.id === activeId) : state.activeFrameIndex
+
+      return {
+        animation: {
+          ...state.animation,
+          frames: nextFrames,
+        },
+        activeFrameIndex: clampFrameIndex(
+          newActiveIndex >= 0 ? newActiveIndex : state.activeFrameIndex,
+          nextFrames.length,
+        ),
+        isPlaying: false,
+        pendingPixelHistory: null,
+        ...clearActiveSelectionState(),
+      }
+    })
+  },
+
   addBlankFrame: () => {
     set((state) => {
       if (state.animation.frames.length >= MAX_FRAMES) {
@@ -1212,7 +1307,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
       const sourceFrame = state.animation.frames[state.activeFrameIndex]
       const sourceLayer = getFrameReferenceLayer(state.referenceLayers, sourceFrame.id)
-      const nextFrame = createFrame(sourceFrame.pixels)
+      const nextFrame = createFrame(sourceFrame.pixels, { descriptor: sourceFrame.descriptor })
       const nextIndex = state.activeFrameIndex + 1
       const nextFrames = [...state.animation.frames]
       nextFrames.splice(nextIndex, 0, nextFrame)

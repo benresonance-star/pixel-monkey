@@ -5,6 +5,7 @@ import { CanvasViewportInner } from './components/CanvasViewport'
 import { CollapsibleSection } from './components/CollapsibleSection'
 import { DrawingToolsSection } from './components/DrawingToolsSection'
 import { EditorHeaderSection } from './components/EditorHeaderSection'
+import { HistorySection } from './components/HistorySection'
 import { getFrameDurationMs } from './lib/playback'
 import { createPersistedEditorStateSnapshot, useEditorStore } from './state/editorStore'
 import { downloadAnimationJson } from '../export/exportAnimation'
@@ -16,6 +17,7 @@ export function PixelEditorPage() {
   const animationFileInputRef = useRef<HTMLInputElement | null>(null)
   const projectFileInputRef = useRef<HTMLInputElement | null>(null)
   const [statusMessage, setStatusMessage] = useState('Ready to draw.')
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true)
   const [isToolsOpen, setIsToolsOpen] = useState(true)
   const [isAnimationOpen, setIsAnimationOpen] = useState(false)
 
@@ -178,8 +180,17 @@ export function PixelEditorPage() {
       </section>
 
       <CollapsibleSection
+        title="History"
+        description="Undo and redo pixel edits."
+        isExpanded={isHistoryOpen}
+        onToggle={() => setIsHistoryOpen((currentValue) => !currentValue)}
+      >
+        <HistorySection />
+      </CollapsibleSection>
+
+      <CollapsibleSection
         title="Drawing tools"
-        description="Pencil, eraser, color, brush size, zoom, and onion skin controls."
+        description="Pencil, eraser, color, brush size, copy and paste frame, and advanced tools."
         isExpanded={isToolsOpen}
         onToggle={() => setIsToolsOpen((currentValue) => !currentValue)}
       >

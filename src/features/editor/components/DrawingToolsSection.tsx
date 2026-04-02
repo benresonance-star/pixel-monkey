@@ -1,8 +1,9 @@
-import { useRef, type ChangeEvent, type ReactNode } from 'react'
+import { useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 
 import { BRUSH_SIZES, type BrushSize } from '../../export/animationSchema'
 import { useEditorStore, type EditorTool, type OnionSkinPlacement } from '../state/editorStore'
 import { createEmptyReferenceLayer } from '../state/referenceLayer'
+import { CollapsibleSubsection } from './CollapsibleSubsection'
 
 const TOOL_OPTIONS: Array<{ label: string; value: EditorTool; icon: ReactNode }> = [
   {
@@ -82,10 +83,14 @@ const ONION_SKIN_PLACEMENT_OPTIONS: Array<{ label: string; value: OnionSkinPlace
 
 export function DrawingToolsSection() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [isPixelActionsOpen, setIsPixelActionsOpen] = useState(false)
+  const [isSelectionOpen, setIsSelectionOpen] = useState(false)
+  const [isSymmetryOpen, setIsSymmetryOpen] = useState(false)
+  const [isOnionSkinOpen, setIsOnionSkinOpen] = useState(false)
+  const [isReferenceOpen, setIsReferenceOpen] = useState(false)
   const selectedTool = useEditorStore((state) => state.selectedTool)
   const selectedColor = useEditorStore((state) => state.selectedColor)
   const brushSize = useEditorStore((state) => state.brushSize)
-  const zoom = useEditorStore((state) => state.zoom)
   const onionSkinEnabled = useEditorStore((state) => state.onionSkinEnabled)
   const onionSkinOpacity = useEditorStore((state) => state.onionSkinOpacity)
   const onionSkinPlacement = useEditorStore((state) => state.onionSkinPlacement)
@@ -97,8 +102,6 @@ export function DrawingToolsSection() {
   const referenceOnionSkinEnabled = useEditorStore((state) => state.referenceOnionSkinEnabled)
   const referenceOnionSkinOpacity = useEditorStore((state) => state.referenceOnionSkinOpacity)
   const hasPixelClipboard = useEditorStore((state) => state.pixelClipboard !== null)
-  const canUndo = useEditorStore((state) => state.pixelHistoryPast.length > 0)
-  const canRedo = useEditorStore((state) => state.pixelHistoryFuture.length > 0)
   const selectionFrameId = useEditorStore((state) => state.selectionFrameId)
   const selectedPixelIndices = useEditorStore((state) => state.selectedPixelIndices)
   const selectionClipboard = useEditorStore((state) => state.selectionClipboard)
@@ -120,7 +123,6 @@ export function DrawingToolsSection() {
   const setSelectedTool = useEditorStore((state) => state.setSelectedTool)
   const setSelectedColor = useEditorStore((state) => state.setSelectedColor)
   const setBrushSize = useEditorStore((state) => state.setBrushSize)
-  const setZoom = useEditorStore((state) => state.setZoom)
   const setOnionSkinEnabled = useEditorStore((state) => state.setOnionSkinEnabled)
   const setOnionSkinOpacity = useEditorStore((state) => state.setOnionSkinOpacity)
   const setOnionSkinPlacement = useEditorStore((state) => state.setOnionSkinPlacement)
@@ -137,8 +139,6 @@ export function DrawingToolsSection() {
   const setReferenceOnionSkinOpacity = useEditorStore((state) => state.setReferenceOnionSkinOpacity)
   const copyActiveFramePixels = useEditorStore((state) => state.copyActiveFramePixels)
   const pastePixelsIntoActiveFrame = useEditorStore((state) => state.pastePixelsIntoActiveFrame)
-  const undoPixelChange = useEditorStore((state) => state.undoPixelChange)
-  const redoPixelChange = useEditorStore((state) => state.redoPixelChange)
   const clearPixelSelection = useEditorStore((state) => state.clearPixelSelection)
   const copySelectedPixels = useEditorStore((state) => state.copySelectedPixels)
   const cutSelectedPixels = useEditorStore((state) => state.cutSelectedPixels)
@@ -193,33 +193,30 @@ export function DrawingToolsSection() {
         </div>
       </div>
 
-      <div className="editor-tools__grid editor-tools__grid--compact">
-        <label className="field field--small">
-          <span>Color</span>
+      <div className="editor-tools__row">
+        <label className="tool-color-swatch">
+          <span className="sr-only">Color</span>
           <input
+            className="tool-color-swatch__input"
             type="color"
             value={selectedColor.slice(0, 7)}
             onChange={(event) => setSelectedColor(event.target.value)}
-          />
-        </label>
-
-        <label className="field field--small">
-          <span>Canvas Zoom</span>
-          <input
-            type="range"
-            min={2}
-            max={12}
-            value={zoom}
-            onChange={(event) => setZoom(Number(event.target.value))}
+            aria-label="Drawing color"
+            title="Color"
           />
         </label>
       </div>
 
-      <section className="onion-skin-panel">
-        <div className="onion-skin-panel__header">
-          <strong>Pixel actions</strong>
-        </div>
-
+      <CollapsibleSubsection
+        title="Pixel actions"
+        headerExtra={
+          hasPixelClipboard ? (
+            <span className="onion-skin-panel__note">Frame copied</span>
+          ) : null
+        }
+        isExpanded={isPixelActionsOpen}
+        onToggle={() => setIsPixelActionsOpen((current) => !current)}
+      >
         <div className="button-group" role="group" aria-label="Pixel clipboard actions">
           <button type="button" onClick={copyActiveFramePixels}>
             Copy frame
@@ -227,18 +224,12 @@ export function DrawingToolsSection() {
           <button type="button" onClick={pastePixelsIntoActiveFrame} disabled={!hasPixelClipboard}>
             Paste frame
           </button>
-          <button type="button" onClick={undoPixelChange} disabled={!canUndo}>
-            Undo
-          </button>
-          <button type="button" onClick={redoPixelChange} disabled={!canRedo}>
-            Redo
-          </button>
         </div>
-      </section>
+      </CollapsibleSubsection>
 
-      <section className="onion-skin-panel">
-        <div className="onion-skin-panel__header">
-          <strong>Selection</strong>
+      <CollapsibleSubsection
+        title="Selection"
+        headerExtra={
           <span className="onion-skin-panel__note">
             {hasFloatingSelection
               ? 'Floating selection'
@@ -246,52 +237,66 @@ export function DrawingToolsSection() {
                 ? `${selectedPixelIndices.length} pixels selected`
                 : 'Use Select tool'}
           </span>
+        }
+        isExpanded={isSelectionOpen}
+        onToggle={() => setIsSelectionOpen((current) => !current)}
+      >
+        <div className="editor-tools__subgroup">
+          <div className="editor-tools__subgroup-label">Copy / paste</div>
+          <div className="button-group" role="group" aria-label="Copy and paste selection">
+            <button type="button" onClick={copySelectedPixels} disabled={!hasPaintSelection}>
+              Copy selection
+            </button>
+            <button type="button" onClick={cutSelectedPixels} disabled={!hasPaintSelection}>
+              Cut selection
+            </button>
+            <button type="button" onClick={pasteSelectedPixels} disabled={!hasSelectionClipboard}>
+              Paste selection
+            </button>
+            <button type="button" onClick={clearPixelSelection} disabled={!hasPaintSelection && !hasFloatingSelection}>
+              Clear selection
+            </button>
+          </div>
         </div>
 
-        <div className="button-group" role="group" aria-label="Selection actions">
-          <button type="button" onClick={copySelectedPixels} disabled={!hasPaintSelection}>
-            Copy selection
-          </button>
-          <button type="button" onClick={cutSelectedPixels} disabled={!hasPaintSelection}>
-            Cut selection
-          </button>
-          <button type="button" onClick={pasteSelectedPixels} disabled={!hasSelectionClipboard}>
-            Paste selection
-          </button>
-          <button type="button" onClick={clearPixelSelection} disabled={!hasPaintSelection && !hasFloatingSelection}>
-            Clear selection
-          </button>
+        <div className="editor-tools__subgroup">
+          <div className="editor-tools__subgroup-label">Mirror</div>
+          <div className="button-group" role="group" aria-label="Mirror floating selection">
+            <button
+              type="button"
+              onClick={() => mirrorFloatingSelection('horizontal')}
+              disabled={!hasFloatingSelection}
+            >
+              Mirror horizontal
+            </button>
+            <button
+              type="button"
+              onClick={() => mirrorFloatingSelection('vertical')}
+              disabled={!hasFloatingSelection}
+            >
+              Mirror vertical
+            </button>
+          </div>
         </div>
 
-        <div className="button-group" role="group" aria-label="Floating selection actions">
-          <button
-            type="button"
-            onClick={() => mirrorFloatingSelection('horizontal')}
-            disabled={!hasFloatingSelection}
-          >
-            Mirror horizontal
-          </button>
-          <button
-            type="button"
-            onClick={() => mirrorFloatingSelection('vertical')}
-            disabled={!hasFloatingSelection}
-          >
-            Mirror vertical
-          </button>
-          <button type="button" onClick={commitFloatingSelection} disabled={!hasFloatingSelection}>
-            Commit move
-          </button>
-          <button type="button" onClick={cancelFloatingSelection} disabled={!hasFloatingSelection}>
-            Cancel move
-          </button>
+        <div className="editor-tools__subgroup">
+          <div className="editor-tools__subgroup-label">Move</div>
+          <div className="button-group" role="group" aria-label="Move floating selection">
+            <button type="button" onClick={commitFloatingSelection} disabled={!hasFloatingSelection}>
+              Commit move
+            </button>
+            <button type="button" onClick={cancelFloatingSelection} disabled={!hasFloatingSelection}>
+              Cancel move
+            </button>
+          </div>
         </div>
-      </section>
+      </CollapsibleSubsection>
 
-      <section className="onion-skin-panel">
-        <div className="onion-skin-panel__header">
-          <strong>Symmetry</strong>
-        </div>
-
+      <CollapsibleSubsection
+        title="Symmetry"
+        isExpanded={isSymmetryOpen}
+        onToggle={() => setIsSymmetryOpen((current) => !current)}
+      >
         <div className="editor-tools__row">
           <label className="toggle-field">
             <input
@@ -322,13 +327,13 @@ export function DrawingToolsSection() {
             Up / Down
           </button>
         </div>
-      </section>
+      </CollapsibleSubsection>
 
-      <section className="onion-skin-panel">
-        <div className="onion-skin-panel__header">
-          <strong>Onion skinning</strong>
-        </div>
-
+      <CollapsibleSubsection
+        title="Onion skinning"
+        isExpanded={isOnionSkinOpen}
+        onToggle={() => setIsOnionSkinOpen((current) => !current)}
+      >
         <div className="editor-tools__row">
           <label className="toggle-field">
             <input
@@ -365,18 +370,20 @@ export function DrawingToolsSection() {
             </button>
           ))}
         </div>
-      </section>
+      </CollapsibleSubsection>
 
-      <section className="onion-skin-panel">
-        <div className="onion-skin-panel__header">
-          <strong>Reference layer</strong>
-          {activeReferenceAsset ? (
+      <CollapsibleSubsection
+        title="Reference layer"
+        headerExtra={
+          activeReferenceAsset ? (
             <span className="onion-skin-panel__note">{activeReferenceAsset.name}</span>
           ) : (
             <span className="onion-skin-panel__note">No image loaded</span>
-          )}
-        </div>
-
+          )
+        }
+        isExpanded={isReferenceOpen}
+        onToggle={() => setIsReferenceOpen((current) => !current)}
+      >
         <input
           ref={fileInputRef}
           className="sr-only"
@@ -482,7 +489,7 @@ export function DrawingToolsSection() {
             Reset transform
           </button>
         </div>
-      </section>
+      </CollapsibleSubsection>
     </div>
   )
 }
